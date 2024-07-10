@@ -23,12 +23,9 @@ else:
 # add column name in null check
 util.null_check(source_df, target_df, ["empid", "name"]) 
 util.count_check(source_df, target_df)
-
+util.columnCount(source_df, target_df)
 # compare 
 util.compare_tables(source_df, target_df, "empid" ,["name"])
-
-
-
 
 
 

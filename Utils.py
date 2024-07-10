@@ -146,6 +146,13 @@ class Utils:
         except Error as e:
             print(f"Error closing the database connection: {e}")
 
+    @staticmethod
+    def columnCount(source_df, target_df):
+        print("Total Coumns in Source is: ", len(source_df.columns))
+        print("Total Coumns in Target is: ", len(target_df.columns))
+
+
+
     
     # def compare_tables(self):
         # try:
