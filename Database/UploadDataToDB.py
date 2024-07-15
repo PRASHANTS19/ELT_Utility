@@ -1,8 +1,7 @@
-from Utils import Utils
+from Database.database import DB
 from openpyxl import load_workbook
-from ReadData import ReadData
+from Utilities.Check import ReadData
 import pandas as pd
-from ReadData import ReadData
 
 excel_path = 'Credentials.xlsx'
 sheet_name = 'UploadDataToDB'
@@ -35,7 +34,7 @@ if sheet:
         host = sheet['B7'].value
         database_name = sheet['B8'].value
 
-        utils = Utils(user, password, host, database_name)
+        utils = DB(user, password, host, database_name)
         
         # Try to connect to the database
         try:
