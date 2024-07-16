@@ -123,3 +123,18 @@ def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
 def columnCount(source_df, target_df):
     print("Total Coumns in Source is: ", len(source_df.columns))
     print("Total Coumns in Target is: ", len(target_df.columns))
+
+def read_excel_data(excel_path, sheet_name):
+    try:
+        wb = load_workbook(excel_path)
+        sheet = wb[sheet_name]
+        return sheet
+    except FileNotFoundError:
+        print(f"Error: The file '{excel_path}' was not found.")
+        return None
+    except KeyError:
+        print(f"Error: The sheet '{sheet_name}' does not exist in the workbook.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred while reading the Excel file: {e}")
+        return None
