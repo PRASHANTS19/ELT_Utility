@@ -1,9 +1,15 @@
-from Database.database import DB
-from openpyxl import load_workbook
-from Utilities.Check import ReadData
 import pandas as pd
+import os
+from database import DB
+from openpyxl import load_workbook
 
-excel_path = 'Credentials.xlsx'
+# relative paths
+from Utilities.Check import ReadData
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
+excel_path = os.path.join(parent_dir, 'Credentials', 'Credentials.xlsx')
+# excel_path = 'Credentials.xlsx'
 sheet_name = 'UploadDataToDB'
 
 # Function to read data from Excel sheet and handle potential errors
@@ -33,6 +39,8 @@ if sheet:
         password = sheet['B6'].value
         host = sheet['B7'].value
         database_name = sheet['B8'].value
+        table_name = sheet['B9'].value
+        create_table_query = sheet['B10'].value
 
         utils = DB(user, password, host, database_name)
         
@@ -46,7 +54,7 @@ if sheet:
         # Insert data into the database if connection was successful
         if utils:
             try:
-                df = utils.insertDataToDb(df)
+                df = utils.insertDataToDb(df, table_name, create_table_query)
             except Exception as e:
                 print(f"Error while inserting data into the database: {e}")
 

@@ -36,22 +36,28 @@ class DB:
     def is_nan(self, x):
         return isinstance(x, float) and math.isnan(x)
     
-    def insertDataToDb(self, df):
+    def insertDataToDb(self, df, table_name, create_table_query):
         try:
             if len(df) == 0:
                 print("DataFrame is empty. Nothing to insert.")
                 return
 
-            self.mycursor.execute("DROP TABLE IF EXISTS employees")
-            self.mycursor.execute("CREATE TABLE employees (Id INT AUTO_INCREMENT PRIMARY KEY, empid INT, name VARCHAR(255), designation VARCHAR(255))")
+            self.mycursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.mycursor.execute(create_table_query)
 
             df = df.where(pd.notnull(df), None)
+            # Get column names from DataFrame
+            columns = df.columns.tolist()
+            columns_str = ", ".join(columns)
+            placeholders = ", ".join(["%s"] * len(columns))
+
+            sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
+
+
+            # Insert data
             for _, row in df.iterrows():
-                empid = row['empid'] if pd.notnull(row['empid']) else None
-                name = row['name'] if pd.notnull(row['name']) else None
-                designation = row['designation'] if pd.notnull(row['designation']) else None
-                
-                self.mycursor.execute("INSERT INTO employees (empid, name, designation) VALUES (%s, %s, %s)", (empid, name, designation))
+                values = [row[col] if pd.notnull(row[col]) else None for col in columns]
+                self.mycursor.execute(sql, values)
 
             self.mydatabase.commit()
             print("Data inserted successfully.") 

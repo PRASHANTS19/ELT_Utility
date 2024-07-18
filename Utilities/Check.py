@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 from Database.database import DB
 
 
-def null_check(source_df, target_df, columns=None):
+def null_check(source_df, target_df, columns=None, writer = None):
     try:
         if source_df is None or target_df is None:
             print("DataFrames are not loaded.")
@@ -23,22 +23,37 @@ def null_check(source_df, target_df, columns=None):
 
         print(f"Null count in source table:\n {source_null_count} total: {source_null_count.sum()}")
         print(f"Null count in target table:\n {target_null_count}  total: {target_null_count.sum()}")
+        if writer:
+            # Write the null count comparison to an Excel sheet
+            df_null_comparison = pd.DataFrame({
+                'Source Null Count': source_null_count,
+                'Target Null Count': target_null_count
+            })
+            df_null_comparison.to_excel(writer, sheet_name='Null Check')
     except Exception as e:
         print(f"Error during null check: {e}")
 
 
-def count_check(source_df, target_df):
+def count_check(source_df, target_df, writer=None):
     try:
         source_df_totalrows = len(source_df)
         target_df_totalrows = len(target_df)
 
         print(f"Total rows in Source table:\n {source_df_totalrows}")
         print(f"Total rows in target table:\n {target_df_totalrows}")
+        if writer:
+            # Write the count check to an Excel sheet
+            df_count_comparison = pd.DataFrame({
+                'Source Rows': [source_df_totalrows],
+                'Target Rows': [target_df_totalrows]
+            })
+            df_count_comparison.to_excel(writer, sheet_name='Count Check')
+
     except Exception as e:
         print(f"Error during count check: {e}")
     
   
-def compare_tables(source_df, target_df, key_column, data_columns):
+def compare_tables(source_df, target_df, key_column, data_columns, writer=None):
     try:
         # Ensure the specified columns exist in both DataFrames
         columns = [key_column] + data_columns
@@ -67,6 +82,11 @@ def compare_tables(source_df, target_df, key_column, data_columns):
         print(f"Number of common rows: {common_count}")
         if common_count > 0:
             print(f"Common rows: {common_rows}")
+        if writer:
+            # Write the table comparison to an Excel sheet
+            df_common_rows = pd.DataFrame(list(common_rows), columns=columns)
+            df_common_rows.to_excel(writer, sheet_name='Common Rows', index=False)
+
     except Exception as e:
         print(f"Error during table comparison: {e}")
 
@@ -120,9 +140,24 @@ def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
 
     return None
 
-def columnCount(source_df, target_df):
-    print("Total Coumns in Source is: ", len(source_df.columns))
-    print("Total Coumns in Target is: ", len(target_df.columns))
+
+def columnCount(source_df, target_df, writer=None):
+    try:
+        source_column_count = len(source_df.columns)
+        target_column_count = len(target_df.columns)
+
+        print(f"Total columns in Source is: {source_column_count}")
+        print(f"Total columns in Target is: {target_column_count}")
+
+        if writer:
+            # Write the column count comparison to an Excel sheet
+            df_column_count_comparison = pd.DataFrame({
+                'Source Columns': [source_column_count],
+                'Target Columns': [target_column_count]
+            })
+            df_column_count_comparison.to_excel(writer, sheet_name='Column Count')
+    except Exception as e:
+        print(f"Error during column count check: {e}")
 
 def read_excel_data(excel_path, sheet_name):
     try:
