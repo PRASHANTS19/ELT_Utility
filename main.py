@@ -32,6 +32,9 @@ null_column_list = json.loads(null_columns)
 # print("Converted null_column is: ", type(null_column_list), null_column_list)
 
 test_results_dir = os.path.join(script_dir, 'TestResults')
+if not os.path.exists(test_results_dir):
+    os.makedirs(test_results_dir)
+
 output_excel_path = os.path.join(test_results_dir, 'comparison_results.xlsx')
 # add column name in null check
 with pd.ExcelWriter(output_excel_path, engine='openpyxl') as writer:
