@@ -3,6 +3,7 @@ from Utilities.Check import ReadData, null_check, count_check, compare_tables, c
 from openpyxl import load_workbook
 import os
 import json
+from datetime import datetime
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 credential_workbook_name = os.path.join(script_dir, 'Credentials', 'Credentials.xlsx')
@@ -35,7 +36,9 @@ test_results_dir = os.path.join(script_dir, 'TestResults')
 if not os.path.exists(test_results_dir):
     os.makedirs(test_results_dir)
 
-output_excel_path = os.path.join(test_results_dir, 'comparison_results.xlsx')
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+output_excel_path = os.path.join(test_results_dir, f'{timestamp}_comparison_results.xlsx')
 # add column name in null check
 with pd.ExcelWriter(output_excel_path, engine='openpyxl') as writer:
     # Perform the checks and write results to the Excel file
