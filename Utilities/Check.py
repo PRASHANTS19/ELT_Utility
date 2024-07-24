@@ -47,7 +47,7 @@ def count_check(source_df, target_df, writer=None):
                 'Source Rows': [source_df_totalrows],
                 'Target Rows': [target_df_totalrows]
             })
-            df_count_comparison.to_excel(writer, sheet_name='Count Check')
+            df_count_comparison.to_excel(writer, sheet_name='Count Check', index=False)
 
     except Exception as e:
         print(f"Error during count check: {e}")
@@ -82,10 +82,31 @@ def compare_tables(source_df, target_df, key_column, data_columns, writer=None):
         print(f"Number of common rows: {common_count}")
         if common_count > 0:
             print(f"Common rows: {common_rows}")
+
+        # Find different rows
+        source_only_rows = source_tuples - target_tuples
+        target_only_rows = target_tuples - source_tuples
+        source_only_count = len(source_only_rows)
+        target_only_count = len(target_only_rows)
+
+        print(f"Number of rows only in source: {source_only_count}")
+        if source_only_count > 0:
+            print(f"Rows only in source: {source_only_rows}")
+        print(f"Number of rows only in target: {target_only_count}")
+        if target_only_count > 0:
+            print(f"Rows only in target: {target_only_rows}")
+
         if writer:
             # Write the table comparison to an Excel sheet
             df_common_rows = pd.DataFrame(list(common_rows), columns=columns)
             df_common_rows.to_excel(writer, sheet_name='Common Rows', index=False)
+
+            df_source_only_rows = pd.DataFrame(list(source_only_rows), columns=columns)
+            df_source_only_rows.to_excel(writer, sheet_name='Source Only Rows', index=False)
+
+            df_target_only_rows = pd.DataFrame(list(target_only_rows), columns=columns)
+            df_target_only_rows.to_excel(writer, sheet_name='Target Only Rows', index=False)
+
 
     except Exception as e:
         print(f"Error during table comparison: {e}")
@@ -114,11 +135,13 @@ def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
         elif type == 'json':
             df = pd.read_json(path)
         elif type == 'database':
+            # add db type, postgres
             user = sheet['B5'].value
             password = sheet['B6'].value
             host = sheet['B7'].value
             database_name = sheet['B8'].value 
             table_name = sheet['B9'].value
+
             db = DB(user, password, host, database_name)
             db.connectDb()
             df = db.readDatabase(table_name)
@@ -155,7 +178,7 @@ def columnCount(source_df, target_df, writer=None):
                 'Source Columns': [source_column_count],
                 'Target Columns': [target_column_count]
             })
-            df_column_count_comparison.to_excel(writer, sheet_name='Column Count')
+            df_column_count_comparison.to_excel(writer, sheet_name='Column Count', index=False)
     except Exception as e:
         print(f"Error during column count check: {e}")
 
