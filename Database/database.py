@@ -5,7 +5,8 @@ import math
 import warnings
 import numpy as np
 from openpyxl import load_workbook
-
+import psycopg2
+from psycopg2 import OperationalError
 
 
 class DB:
@@ -29,6 +30,22 @@ class DB:
             if self.mydatabase.is_connected():
                 print("Connected to the database successfully!")
         except Error as e:
+            print(f"Error: {e}")
+            self.mydatabase = None
+            self.mycursor = None
+
+    def connectDbPostgres(self):
+        try:
+            self.mydatabase = psycopg2.connect(
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                database=self.database
+            )
+            self.mycursor = self.mydatabase.cursor()
+            if self.mydatabase:
+                print("Connected to the database successfully!")
+        except OperationalError as e:
             print(f"Error: {e}")
             self.mydatabase = None
             self.mycursor = None
@@ -64,13 +81,17 @@ class DB:
         except Exception as e:
             print(f"Error inserting data to DB: {e}")
 
-    def readDatabase(self, table_name)->pd.DataFrame:
+    def readDatabase(self, table_name , query=None)->pd.DataFrame:
         try:
             # Suppress the specific warning from pandas
+            df = None
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", UserWarning)
                 # Read data from MySQL into a DataFrame
-                df = pd.read_sql(f"SELECT * FROM {table_name}", con=self.mydatabase)
+                if query is not None:
+                    df = pd.read_sql(query, con=self.mydatabase)
+                else:
+                    df = pd.read_sql(f"SELECT * FROM {table_name}", con=self.mydatabase)
                 df.replace(to_replace=[None], value=float('nan'), inplace=True)
                 return df 
         except Exception as e:
@@ -79,12 +100,18 @@ class DB:
 
     def closeDb(self):
         try:
-            if self.mycursor is not None and self.mydatabase.is_connected():
+            if self.mycursor:
                 self.mycursor.close()
+            if self.mydatabase:
                 self.mydatabase.close()
-                print("Database connection closed.")
-        except Error as e:
+            print("Database connection closed successfully!")
+        except Exception as e:
             print(f"Error closing the database connection: {e}")
+
+
+
+
+
 
 
     

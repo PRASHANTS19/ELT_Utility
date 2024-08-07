@@ -111,7 +111,7 @@ def compare_tables(source_df, target_df, key_column, data_columns, writer=None):
     except Exception as e:
         print(f"Error during table comparison: {e}")
 
-def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
+def ReadData(excel_path: str, sheet_name: str, query=None) -> pd.DataFrame:
     try:
         wb = load_workbook(excel_path)
         if sheet_name not in wb.sheetnames:
@@ -121,7 +121,8 @@ def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
 
         # Read the source type and path from the Excel sheet
         type = sheet['B1'].value.strip()  
-        path = sheet['B2'].value.strip() 
+        path = sheet['B2'].value.strip()
+        dbType = sheet['B4'].value.strip()
         # print(f"Source Type: {type}")
         # print(f"Path: {path}")
 
@@ -143,8 +144,11 @@ def ReadData(excel_path: str, sheet_name: str) -> pd.DataFrame:
             table_name = sheet['B9'].value
 
             db = DB(user, password, host, database_name)
-            db.connectDb()
-            df = db.readDatabase(table_name)
+            if dbType == "Mysql":
+                db.connectDb()
+            elif dbType == "PostgreSQL":
+                db.connectDbPostgres()
+            df = db.readDatabase(table_name, query)
             db.closeDb()
 
         else:

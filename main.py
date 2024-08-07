@@ -18,6 +18,9 @@ target_df = ReadData(credential_workbook_name, target_sheet_name)
 if target_df is None:
     print("Failed to load target data.")
 
+# print(source_df)
+# print(target_df)
+
 
 check_sheet_name = 'Checks'
 check_sheet = read_excel_data(credential_workbook_name, check_sheet_name)
@@ -49,6 +52,14 @@ with pd.ExcelWriter(output_excel_path, engine='openpyxl') as writer:
     if column_c == "Yes":
         columnCount(source_df, target_df, writer=writer)
     if compare_t == "Yes":
+        sourceQuery = check_sheet['E5'].value
+        targetQuery = check_sheet['F5'].value
+
+        if sourceQuery != "n/a" and targetQuery != "n/a":
+            source_df = ReadData(credential_workbook_name, source_sheet_name, sourceQuery)
+            target_df = ReadData(credential_workbook_name, target_sheet_name, targetQuery)
+            # print(source_df)
+            # print(target_df)
         primaryKey = check_sheet['C5'].value
         compare_table_columns = check_sheet['D5'].value
         compare_table_columns_list = json.loads(compare_table_columns)
