@@ -39,7 +39,7 @@ test_results_dir = os.path.join(script_dir, 'TestResults')
 if not os.path.exists(test_results_dir):
     os.makedirs(test_results_dir)
 
-timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+timestamp = datetime.now().strftime('%Y%m%d_%H%M')
 
 output_excel_path = os.path.join(test_results_dir, f'{timestamp}_comparison_results.xlsx')
 # add column name in null check
