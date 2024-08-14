@@ -4,12 +4,13 @@ from mysql.connector import Error
 import numpy as np
 from openpyxl import load_workbook
 from Database.database import DB
+import logging
 
 
 def null_check(source_df, target_df, columns=None, writer = None):
     try:
         if source_df is None or target_df is None:
-            print("DataFrames are not loaded.")
+            logging.error("DataFrames are not loaded.")
             return
         if columns:
             source_df[columns] = source_df[columns].replace('', np.nan)
@@ -17,10 +18,10 @@ def null_check(source_df, target_df, columns=None, writer = None):
         else:
             source_df = source_df.replace('', np.nan)
             target_df = target_df.replace('', np.nan)
+
         print("Null values comparison:")
         source_null_count = source_df[columns].isnull().sum() if columns else source_df.isnull().sum()
         target_null_count = target_df[columns].isnull().sum() if columns else target_df.isnull().sum()
-
         print(f"Null count in source table:\n {source_null_count} total: {source_null_count.sum()}")
         print(f"Null count in target table:\n {target_null_count}  total: {target_null_count.sum()}")
         if writer:
