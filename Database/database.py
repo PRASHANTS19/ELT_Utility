@@ -7,7 +7,7 @@ import numpy as np
 from openpyxl import load_workbook
 import psycopg2
 from psycopg2 import OperationalError
-
+import logging
 
 class DB:
     def __init__(self, user=None, password=None, host=None, database_name=None):
@@ -20,6 +20,7 @@ class DB:
 
     def connectDb(self):
         try:
+            # Attempt to establish a connection to the MySQL database
             self.mydatabase = mysql.connector.connect(
                 user=self.user,
                 password=self.password,
@@ -27,12 +28,24 @@ class DB:
                 database=self.database
             )
             self.mycursor = self.mydatabase.cursor()
+
             if self.mydatabase.is_connected():
                 print("Connected to the database successfully!")
-        except Error as e:
-            print(f"Error: {e}")
-            self.mydatabase = None
-            self.mycursor = None
+            else:
+                raise ConnectionError("Failed to establish a database connection.")
+
+        except mysql.connector.Error as db_error:
+            logging.error(f"Database connection error: {db_error}")
+            self._cleanup_resources()
+
+        except ConnectionError as conn_error:
+            logging.error(f"Connection error: {conn_error}")
+            self._cleanup_resources()
+
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            self._cleanup_resources()
+
 
     def connectDbPostgres(self):
         try:
@@ -43,12 +56,23 @@ class DB:
                 database=self.database
             )
             self.mycursor = self.mydatabase.cursor()
+
             if self.mydatabase:
                 print("Connected to the database successfully!")
-        except OperationalError as e:
-            print(f"Error: {e}")
-            self.mydatabase = None
-            self.mycursor = None
+            else:
+                raise ConnectionError("Failed to establish a database connection.")
+
+        except OperationalError as db_error:
+            logging.error(f"OperationalError during PostgreSQL connection: {db_error}")
+            self._cleanup_resources()
+
+        except ConnectionError as conn_error:
+            logging.error(f"Connection error: {conn_error}")
+            self._cleanup_resources()
+
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            self._cleanup_resources()
 
     def is_nan(self, x):
         return isinstance(x, float) and math.isnan(x)
@@ -69,8 +93,6 @@ class DB:
             placeholders = ", ".join(["%s"] * len(columns))
 
             sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-
-
             # Insert data
             for _, row in df.iterrows():
                 values = [row[col] if pd.notnull(row[col]) else None for col in columns]
@@ -93,7 +115,7 @@ class DB:
                 else:
                     df = pd.read_sql(f"SELECT * FROM {table_name}", con=self.mydatabase)
                 df.replace(to_replace=[None], value=float('nan'), inplace=True)
-                return df 
+                return df
         except Exception as e:
             print(f"Error reading source data from DB: {e}")
             return df
@@ -107,6 +129,15 @@ class DB:
             print("Database connection closed successfully!")
         except Exception as e:
             print(f"Error closing the database connection: {e}")
+
+    def _cleanup_resources(self):
+        # Clean up resources if there was an error
+        if self.mycursor is not None:
+            self.mycursor.close()
+            self.mycursor = None
+        if self.mydatabase is not None and self.mydatabase.is_connected():
+            self.mydatabase.close()
+            self.mydatabase = None
 
 
 
