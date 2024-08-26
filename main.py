@@ -1,5 +1,6 @@
 import pandas as pd
-from Utilities.Check import ReadData, null_check, count_check, compare_tables, columnCount, read_excel_data
+from Utilities.Check import null_check, count_check, compare_tables, columnCount
+from Utilities.Utils import ReadData, read_excel_data
 from openpyxl import load_workbook
 import os
 import json

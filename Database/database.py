@@ -19,6 +19,14 @@ class DB:
         self.mydatabase = None
 
     def connectDb(self):
+        """
+        Establishes a connection to a MySQL database and sets up a cursor for executing queries.
+
+        :return: None
+
+        Owner: Prashant Sahu
+        Date: 2024-08-26
+        """
         try:
             # Attempt to establish a connection to the MySQL database
             self.mydatabase = mysql.connector.connect(
@@ -29,26 +37,38 @@ class DB:
             )
             self.mycursor = self.mydatabase.cursor()
 
+            # Check if the connection was successful
             if self.mydatabase.is_connected():
                 print("Connected to the database successfully!")
             else:
                 raise ConnectionError("Failed to establish a database connection.")
 
         except mysql.connector.Error as db_error:
+            # Handle specific database connection errors
             logging.error(f"Database connection error: {db_error}")
             self._cleanup_resources()
 
         except ConnectionError as conn_error:
+            # Handle general connection errors
             logging.error(f"Connection error: {conn_error}")
             self._cleanup_resources()
 
         except Exception as e:
+            # Handle any other unexpected errors
             logging.error(f"An unexpected error occurred: {e}")
             self._cleanup_resources()
 
-
     def connectDbPostgres(self):
+        """
+        Establishes a connection to a PostgreSQL database and sets up a cursor for executing queries.
+
+        :return: None
+
+        Owner: Prashant Sahu
+        Date: 2024-08-26
+        """
         try:
+            # Attempt to establish a connection to the PostgreSQL database
             self.mydatabase = psycopg2.connect(
                 user=self.user,
                 password=self.password,
@@ -57,65 +77,94 @@ class DB:
             )
             self.mycursor = self.mydatabase.cursor()
 
+            # Check if the connection was successful
             if self.mydatabase:
                 print("Connected to the database successfully!")
             else:
                 raise ConnectionError("Failed to establish a database connection.")
 
         except OperationalError as db_error:
+            # Handle errors specific to database operations
             logging.error(f"OperationalError during PostgreSQL connection: {db_error}")
             self._cleanup_resources()
 
         except ConnectionError as conn_error:
+            # Handle general connection errors
             logging.error(f"Connection error: {conn_error}")
             self._cleanup_resources()
 
         except Exception as e:
+            # Handle any other unexpected errors
             logging.error(f"An unexpected error occurred: {e}")
             self._cleanup_resources()
 
     def is_nan(self, x):
         return isinstance(x, float) and math.isnan(x)
-    
+
     def insertDataToDb(self, df, table_name, create_table_query):
+        """
+        Inserts data from a pandas DataFrame into a MySQL database table.
+        Owner: Prashant Sahu
+        Date: 2024-08-26
+        """
         try:
+            # Check if DataFrame is empty
             if len(df) == 0:
                 print("DataFrame is empty. Nothing to insert.")
                 return
 
+            # Drop the table if it already exists and create a new one
             self.mycursor.execute(f"DROP TABLE IF EXISTS {table_name}")
             self.mycursor.execute(create_table_query)
 
+            # Replace NaN values with None for SQL compatibility
             df = df.where(pd.notnull(df), None)
-            # Get column names from DataFrame
+
+            # Get column names from DataFrame and prepare SQL insert statement
             columns = df.columns.tolist()
             columns_str = ", ".join(columns)
             placeholders = ", ".join(["%s"] * len(columns))
-
             sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-            # Insert data
+
+            # Insert data row by row
             for _, row in df.iterrows():
                 values = [row[col] if pd.notnull(row[col]) else None for col in columns]
                 self.mycursor.execute(sql, values)
 
+            # Commit the transaction to the database
             self.mydatabase.commit()
-            print("Data inserted successfully.") 
+            print("Data inserted successfully.")
         except Exception as e:
             print(f"Error inserting data to DB: {e}")
 
-    def readDatabase(self, table_name , query=None)->pd.DataFrame:
+    def readDatabase(self, table_name, query=None) -> pd.DataFrame:
+        """
+        Reads data from a MySQL database into a pandas DataFrame.
+
+        :param table_name: Name of the table to read data from.
+        :param query: Optional SQL query string. If provided, the query will be executed
+                      instead of selecting all rows from the table.
+        :return: A pandas DataFrame containing the data read from the database.
+
+        Owner: Prashant Sahu
+        Date: 2024-08-26
+        """
         try:
-            # Suppress the specific warning from pandas
             df = None
+            # Suppress the specific UserWarning from pandas
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", UserWarning)
-                # Read data from MySQL into a DataFrame
+
+                # Read data from MySQL into a DataFrame using the provided query or table name
                 if query is not None:
                     df = pd.read_sql(query, con=self.mydatabase)
                 else:
                     df = pd.read_sql(f"SELECT * FROM {table_name}", con=self.mydatabase)
+
+                # Replace None values with NaN in the DataFrame
                 df.replace(to_replace=[None], value=float('nan'), inplace=True)
-                return df
+
+            return df
         except Exception as e:
             print(f"Error reading source data from DB: {e}")
             return df

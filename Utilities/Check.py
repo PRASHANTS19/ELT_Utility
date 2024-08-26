@@ -7,6 +7,20 @@ from Database.database import DB
 import logging
 
 def null_check(source_df, target_df, columns=None, writer=None):
+    """
+    Method to perform null check comparison between source and target DataFrames.
+
+    1. Checks if the DataFrames are loaded.
+    2. Replaces empty strings with NaN in the specified columns or entire DataFrame.
+    3. Calculates and prints the null counts for source and target DataFrames.
+    4. Optionally writes the null count comparison to an Excel sheet.
+    Raises:
+    - KeyError: If specified columns are not found in the DataFrame.
+    - Exception: For any other general errors during execution.
+
+    Owner: Prashant Sahu
+    Date: 23-Aug-2024
+    """
     try:
         # Check if DataFrames are loaded
         if source_df is None or target_df is None:
@@ -43,6 +57,18 @@ def null_check(source_df, target_df, columns=None, writer=None):
         print(f"Error during null check: {e}")
 
 def count_check(source_df, target_df, writer=None):
+    """
+    Method to compare the total row counts between source and target DataFrames.
+
+    1. Calculates the total number of rows in the source and target DataFrames.
+    2. Prints the total row count for both DataFrames.
+    3. Optionally writes the row count comparison to an Excel sheet.
+    Raises:
+    - Exception: Catches any general errors during execution.
+
+    Owner: Prashant Sahu
+    Date: 23-Aug-2024
+    """
     try:
         # Calculate total rows in each DataFrame
         source_df_totalrows = len(source_df)
@@ -62,8 +88,65 @@ def count_check(source_df, target_df, writer=None):
     except Exception as e:
         print(f"Error during count check: {e}")
 
+def columnCount(source_df, target_df, writer=None):
+    """
+    Method to compare the number of columns between source and target DataFrames.
+
+    1. Ensures that both input DataFrames are not None.
+    2. Counts the number of columns in the source and target DataFrames.
+    3. Prints the total column count for both DataFrames.
+    4. Optionally writes the column count comparison to an Excel sheet.
+    Raises:
+    - ValueError: If one or both of the input DataFrames are None.
+    - AttributeError: If DataFrames are not properly loaded or do not have columns attribute.
+    - Exception: Catches any other unexpected errors during execution.
+
+    Owner: Prashant Sahu
+    Date: 23-Aug-2024
+    """
+    try:
+        # Ensure the input dataframes are not None
+        if source_df is None or target_df is None:
+            raise ValueError("One or both of the input dataframes are None.")
+
+        # Count the number of columns in both dataframes
+        source_column_count = len(source_df.columns)
+        target_column_count = len(target_df.columns)
+
+        print(f"Total columns in Source: {source_column_count}")
+        print(f"Total columns in Target: {target_column_count}")
+
+        if writer:
+            # Write the column count comparison to an Excel sheet
+            df_column_count_comparison = pd.DataFrame({
+                'Source Columns': [source_column_count],
+                'Target Columns': [target_column_count]
+            })
+            df_column_count_comparison.to_excel(writer, sheet_name='Column Count', index=False)
+
+    except ValueError as ve:
+        print(f"ValueError during column count check: {ve}")
+    except AttributeError as ae:
+        print(f"AttributeError during column count check: {ae}. Ensure dataframes are properly loaded.")
+    except Exception as e:
+        print(f"Unexpected error during column count check: {e}")
 
 def compare_tables(source_df, target_df, key_column, data_columns, writer=None):
+    """
+    Method to compare rows between source and target DataFrames based on a key column and specific data columns.
+
+    1. Ensures that the specified key column and data columns exist in both DataFrames.
+    2. Fills NaN values with empty strings in the specified columns.
+    3. Creates tuples of the specified columns for comparison.
+    4. Finds and prints the number of common rows, rows only in the source, and rows only in the target.
+    5. Optionally writes the comparison results to an Excel sheet, including common rows, source-only rows, and target-only rows.
+    Raises:
+    - ValueError: If the specified columns are not found in one or both DataFrames.
+    - Exception: Catches any other unexpected errors during execution.
+
+    Owner: Prashant Sahu
+    Date: 23-Aug-2024
+    """
     try:
         # Ensure the specified columns exist in both DataFrames
         columns = [key_column] + data_columns
@@ -118,112 +201,6 @@ def compare_tables(source_df, target_df, key_column, data_columns, writer=None):
         print(f"An unexpected error occurred during table comparison: {e}")
 
 
-def ReadData(excel_path: str, sheet_name: str, query=None) -> pd.DataFrame:
-    try:
-        # Load the workbook and check if the sheet exists
-        wb = load_workbook(excel_path)
-        if sheet_name not in wb.sheetnames:
-            raise ValueError(f"Sheet '{sheet_name}' not found in the Excel file '{excel_path}'.")
-
-        sheet = wb[sheet_name]
-
-        # Validate and read required cells
-        type = sheet['B1'].value
-        path = sheet['B2'].value
-        dbType = sheet['B4'].value
-
-        if type is None or path is None:
-            raise ValueError("The source type or path is not specified in the Excel sheet.")
-
-        type = type.strip()
-        path = path.strip()
-
-        df = None
-
-        # Load the data based on the source type
-        if type == 'csv':
-            df = pd.read_csv(path)
-        elif type == 'excel':
-            df = pd.read_excel(path)
-        elif type == 'json':
-            df = pd.read_json(path)
-        elif type == 'database':
-            # Ensure database fields are populated
-            user = sheet['B5'].value
-            password = sheet['B6'].value
-            host = sheet['B7'].value
-            database_name = sheet['B8'].value
-            table_name = sheet['B9'].value
-
-            if not all([user, password, host, database_name, table_name]):
-                raise ValueError("Incomplete database credentials or table information in the Excel sheet.")
-
-            db = DB(user.strip(), password.strip(), host.strip(), database_name.strip())
-            if dbType.strip() == "Mysql":
-                db.connectDb()
-            elif dbType.strip() == "PostgreSQL":
-                db.connectDbPostgres()
-            else:
-                raise ValueError(f"Unsupported database type: {dbType}")
-
-            df = db.readDatabase(table_name.strip(), query)
-            db.closeDb()
-        else:
-            raise ValueError(f"Unsupported source type: '{type}'.")
-
-        return df
-
-    except FileNotFoundError as e:
-        print(f"Error: The file at path '{excel_path}' was not found. {e}")
-    except pd.errors.EmptyDataError as e:
-        print(f"Error: No data found in the file '{excel_path}'. {e}")
-    except ValueError as e:
-        print(f"ValueError: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-    return None
 
 
-def columnCount(source_df, target_df, writer=None):
-    try:
-        # Ensure the input dataframes are not None
-        if source_df is None or target_df is None:
-            raise ValueError("One or both of the input dataframes are None.")
 
-        # Count the number of columns in both dataframes
-        source_column_count = len(source_df.columns)
-        target_column_count = len(target_df.columns)
-
-        print(f"Total columns in Source: {source_column_count}")
-        print(f"Total columns in Target: {target_column_count}")
-
-        if writer:
-            # Write the column count comparison to an Excel sheet
-            df_column_count_comparison = pd.DataFrame({
-                'Source Columns': [source_column_count],
-                'Target Columns': [target_column_count]
-            })
-            df_column_count_comparison.to_excel(writer, sheet_name='Column Count', index=False)
-    except ValueError as ve:
-        print(f"ValueError during column count check: {ve}")
-    except AttributeError as ae:
-        print(f"AttributeError during column count check: {ae}. Ensure dataframes are properly loaded.")
-    except Exception as e:
-        print(f"Unexpected error during column count check: {e}")
-
-
-def read_excel_data(excel_path, sheet_name):
-    try:
-        wb = load_workbook(excel_path)
-        sheet = wb[sheet_name]
-        return sheet
-    except FileNotFoundError:
-        print(f"Error: The file '{excel_path}' was not found.")
-        return None
-    except KeyError:
-        print(f"Error: The sheet '{sheet_name}' does not exist in the workbook.")
-        return None
-    except Exception as e:
-        print(f"An unexpected error occurred while reading the Excel file: {e}")
-        return None
