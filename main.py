@@ -1,13 +1,12 @@
 import pandas as pd
 from Utilities.Check import null_check, count_check, compare_tables, columnCount
 from Utilities.Utils import ReadData, read_excel_data
-from openpyxl import load_workbook
-import config
+from Configuration import config
 import os
 import json
 from datetime import datetime
 
-def main():
+def main(index):
     # Use variables from config.py
     credential_workbook_name = config.credential_workbook_name
     source_sheet_name = config.source_sheet_name
@@ -23,13 +22,28 @@ def main():
         raise ValueError("Failed to load target data.")
 
     # Read the check configuration sheet
-    check_sheet_name = config.check_sheet_name
-    check_sheet = read_excel_data(credential_workbook_name, check_sheet_name)
+    # check_sheet_name = config.check_sheet_name
 
-    null_c = check_sheet['B2'].value
-    count_c = check_sheet['B3'].value
-    column_c = check_sheet['B4'].value
-    compare_t = check_sheet['B5'].value
+
+    # check_sheet = read_excel_data(credential_workbook_name, check_sheet_name)
+
+    null_sheet_name = config.null_check_sheet
+    count_sheet_name = config.count_check_sheet
+    column_sheet_name = config.column_check_sheet
+    compare_sheet_name = config.compare_tables_sheet
+
+    null_check_sheet = read_excel_data(credential_workbook_name, null_sheet_name)
+    count_check_sheet = read_excel_data(credential_workbook_name, count_sheet_name)
+    column_check_sheet = read_excel_data(credential_workbook_name, column_sheet_name)
+    compare_check_sheet = read_excel_data(credential_workbook_name, compare_sheet_name)
+
+
+    null_c = null_check_sheet[f'A{index}'].value
+    count_c = count_check_sheet[f'A{index}'].value
+    column_c = column_check_sheet[f'A{index}'].value
+    compare_t = compare_check_sheet[f'A{index}'].value
+
+    # print(null_c+ " "+ count_c)
 
     # Validate that the check values are "Yes" or "No"
     valid_check_values = {"Yes", "No"}
@@ -43,7 +57,7 @@ def main():
         raise ValueError(f"Invalid value for compare_t: {compare_t}. Expected 'Yes' or 'No'.")
 
     # Read and validate null column configuration
-    null_columns = check_sheet['D2'].value
+    null_columns = null_check_sheet[f'B{index}'].value
     try:
         null_column_list = json.loads(null_columns)
         if not isinstance(null_column_list, list):
@@ -58,7 +72,7 @@ def main():
 
     # Generate timestamp for output file
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-    output_excel_path = os.path.join(test_results_dir, f'{timestamp}_comparison_results.xlsx')
+    output_excel_path = os.path.join(test_results_dir, f'TC_{index}_{timestamp}_comparison_results.xlsx')
 
     # Perform the checks and write results to the Excel file
     with pd.ExcelWriter(output_excel_path, engine='openpyxl') as writer:
@@ -69,15 +83,15 @@ def main():
         if column_c == "Yes":
             columnCount(source_df, target_df, writer=writer)
         if compare_t == "Yes":
-            sourceQuery = check_sheet['E5'].value
-            targetQuery = check_sheet['F5'].value
+            sourceQuery = compare_check_sheet[f'D{index}'].value
+            targetQuery = compare_check_sheet[f'E{index}'].value
 
             # Validate the presence of queries if required
             if sourceQuery != "n/a" and targetQuery != "n/a":
                 source_df = ReadData(credential_workbook_name, source_sheet_name, sourceQuery)
                 target_df = ReadData(credential_workbook_name, target_sheet_name, targetQuery)
-            primaryKey = check_sheet['C5'].value
-            compare_table_columns = check_sheet['D5'].value
+            primaryKey = compare_check_sheet[f'B{index}'].value
+            compare_table_columns = compare_check_sheet[f'C{index}'].value
 
             # Validate and parse compare_table_columns
             try:
@@ -88,6 +102,6 @@ def main():
                 raise ValueError(f"Failed to parse comparison columns: {e}")
 
             compare_tables(source_df, target_df, primaryKey, compare_table_columns_list, writer=writer)
-
-if __name__ == "__main__":
-    main()
+#
+# if __name__ == "__main__":
+#     main()

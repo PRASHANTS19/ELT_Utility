@@ -1,6 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
-from Database.database import DB
+from Utilities.Connection import DB
 def ReadData(excel_path: str, sheet_name: str, query=None) -> pd.DataFrame:
     """
     Method to read data from an external source (CSV, Excel, JSON, or database) based on the configuration provided

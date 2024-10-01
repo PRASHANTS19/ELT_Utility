@@ -1,8 +1,8 @@
 import logging
 import os
-from database import DB
+from Utilities.Connection import DB
 from openpyxl import load_workbook
-from Utilities.Check import ReadData
+from Utilities.Utils import ReadData
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
